@@ -1,0 +1,8 @@
+node_modules/
+.env
+*.log
+cookies.txt
+*.zip
+*.rar
+.DS_Store
+Thumbs.db
