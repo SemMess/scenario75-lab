@@ -1,0 +1,49 @@
+# SCENARIO75 - Red vs. Blue lab ("Cookies Reuse & MFA Bypass")
+# Author: Asyam Adithakarya Erdi Pribadi
+
+networks:
+  internal-zone:
+    driver: bridge
+
+volumes:
+  admin-logs:
+
+services:
+  # Red Team target: the vulnerable Admin Feedback System
+  app:
+    build: ./app
+    container_name: scenario75-app
+    hostname: feedback.admin.local
+    networks:
+      internal-zone:
+        aliases:
+          - feedback.admin.local
+    ports:
+      - "3075:3075"
+    environment:
+      - PORT=3075
+    restart: unless-stopped
+
+  # Blue Team jump box: SSH-only access to the shared log volume
+  ssh-blue:
+    build: ./ssh-blue
+    container_name: scenario75-ssh-blue
+    networks:
+      - internal-zone
+    ports:
+      - "2275:2275"
+    volumes:
+      - admin-logs:/opt/admin/logs
+    restart: unless-stopped
+
+  # One-shot job: injects the simulated attack sequence into
+  # /opt/admin/logs/access.log and /opt/admin/logs/error.log
+  log-injector:
+    build: ./scripts
+    container_name: scenario75-log-injector
+    networks:
+      - internal-zone
+    volumes:
+      - admin-logs:/opt/admin/logs
+    depends_on:
+      - app
